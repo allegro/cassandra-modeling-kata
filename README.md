@@ -63,30 +63,33 @@ We will build and deliver the new data model in the following six short iteratio
 The prerequisite in the selling/buying workflow is user registration. The user registration can be accomplished with a simple [Static table](http://planetcassandra.org/blog/datastax-developer-blog-a-thrift-to-cql3-upgrade-guide/).
 A static table is very similar to relational table - each row generally has the same, static set of columns:
 
+```sql
+CREATE TABLE cass_user (
+    user_id uuid,
+    login varchar,
+    age int,
+    PRIMARY KEY (user_id)
+);
+```
 
-    CREATE TABLE cass_user (
-        user_id uuid,
-        login varchar,
-        age int,
-        PRIMARY KEY (user_id)
-    );
 
-
-The **primary key** of the User table is `user_id`. In Apache Cassandra, a primary key consists of two parts - mandatory [partitioning key](http://...) and optional [clustering key](http://...). The partitioning key determines the physical location of the row in the Apache Cassandra cluster. 
+The **primary key** of the User table is `user_id`. In Apache Cassandra, a primary key consists of two parts - mandatory [partitioning key](http://www.datastax.com/documentation/cql/3.1/cql/ddl/ddl_compound_keys_c.html) and optional [clustering key](http://www.datastax.com/documentation/cql/3.1/cql/ddl/ddl_compound_keys_c.html). The partitioning key determines the physical location of the row in the Apache Cassandra cluster. 
 The clustering key specifies the sort order of columns within a row (partition) - clustering keys are used in Dynamic tables (wide rows) discussed in the next iterations. The User table defines only the partitioning key, which means that each user will be stored in a separate physical row.
 The `user_id` is defined as the [uuid](http://www.datastax.com/documentation/cql/3.1/cql/cql_reference/uuid_type_r.html) - this is the preferred type used in Apache Cassandra (there are no global sequences or auto-increment fields). 
 
 In the Java code, the User table should be mapped to the following Spring Data Cassandra User class:
 
-    @Table("cass_user")
-    public class User {
+```java
+@Table("cass_user")
+public class User {
 
-    @PrimaryKey
-    private UUID userId;
-    private String login;
-    private int age;
+@PrimaryKey
+private UUID userId;
+private String login;
+private int age;
     
-    }
+}
+```
 
 The Spring Data Cassandra is relatively new in the [Spring Data](http://projects.spring.io/spring-data/) ecosystem. The Spring Data Cassandra version 1.0 GA is available since May 2014.
 
@@ -97,10 +100,11 @@ Thanks to its powerful entity mapping system and auto-generating query machanism
 * annotate the User userId field with the `@PrimaryKey` annotation
 * create the UserRepository interface extending from the `TypedIdCassandraRepository` repository
 
-
-    public interface UserRepository extends TypedIdCassandraRepository<User, UUID> {
+```java
+public interface UserRepository extends TypedIdCassandraRepository<User, UUID> {
     
-    }
+}
+```
     
 
 And that's all! You don't have to type a single line of code to save and get a User from Cassandra. Let's write an integration test to verify this.
@@ -109,30 +113,32 @@ In a test-driven development cycle, **integration tests should be fast and isola
 
 Now, you can write your first Cassandra integration test:
 
-    @RunWith(SpringJUnit4ClassRunner.class)
-    @CassandraIntegrationTest
-    public class UserRepositoryIntegrationTest {
+```java
+@RunWith(SpringJUnit4ClassRunner.class)
+@CassandraIntegrationTest
+public class UserRepositoryIntegrationTest {
 
-        @Inject
-        private UserRepository userRepository;
+    @Inject
+    private UserRepository userRepository;
 
-        @Test
-        public void shouldInsertUser() throws Exception {
-            //given
-            UUID uuid = UUID.randomUUID();
-            String login = "cassandra_kata";
-            int age = 34;
-            User user = new User(uuid, login, age);
+    @Test
+    public void shouldInsertUser() throws Exception {
+        //given
+        UUID uuid = UUID.randomUUID();
+        String login = "cassandra_kata";
+        int age = 34;
+        User user = new User(uuid, login, age);
 
-            //when
-            userRepository.save(user);
+        //when
+        userRepository.save(user);
 
-            //then
-            User foundUser = userRepository.findOne(uuid);
-            assertThat(foundUser.getLogin()).isEqualTo(login);
-            assertThat(foundUser.getAge()).isEqualTo(age);
-        }
+        //then
+        User foundUser = userRepository.findOne(uuid);
+        assertThat(foundUser.getLogin()).isEqualTo(login);
+        assertThat(foundUser.getAge()).isEqualTo(age);
     }
+}
+```
 
 Now, run the test in your IDE and you should see a nice green bar :-) 
 
@@ -154,66 +160,72 @@ The primary key for the "Show item details" query should be the `item_id` - you 
 
 The definition of the Master Item table can be defined as follows:
 
-    CREATE TABLE cass_master_item (
-        item_id timeuuid,
-        user_id uuid,
-        item_name varchar,
-        item_desc text,
-        unit_price decimal,
-        offered_units int,
-        available_units int,
-        start_date timestamp,
-        end_date timestamp,
-        auction_finished boolean,
-        PRIMARY KEY (item_id)
-    );
+```sql
+CREATE TABLE cass_master_item (
+    item_id timeuuid,
+    user_id uuid,
+    item_name varchar,
+    item_desc text,
+    unit_price decimal,
+    offered_units int,
+    available_units int,
+    start_date timestamp,
+    end_date timestamp,
+    auction_finished boolean,
+    PRIMARY KEY (item_id)
+);
+```
     
 This is a Static table with a simple primary key composed only of the partitioning key. Please note the data type used for the `item_id`, it is defined as [timeuuid](http://www.datastax.com/documentation/cql/3.1/cql/cql_reference/uuid_type_r.html). The timeuuid data type is extremely useful for [Time Series Data](http://planetcassandra.org/getting-started-with-time-series-data-modeling/), which you will soon implement for the items Listings.  
   
 In the Java code, the Master Item table should be mapped to the following Spring Data Cassandra `Item` class:
 
-    @Table("cass_master_item")
-    public class Item {
+```java
+@Table("cass_master_item")
+public class Item {
 
-        @PrimaryKey
-        private UUID itemId;
+    @PrimaryKey
+    private UUID itemId;
 
-        @Column("user_id")
-        private UUID userId;
+    @Column("user_id")
+    private UUID userId;
 
-        @Column("item_name")
-        private String name;
+    @Column("item_name")
+    private String name;
 
-        @Column("item_desc")
-        private String description;
+    @Column("item_desc")
+    private String description;
 
-        @Column("unit_price")
-        private BigDecimal unitPrice;
+    @Column("unit_price")
+    private BigDecimal unitPrice;
 
-        @Column("offered_units")
-        private Integer offeredUnits;
+    @Column("offered_units")
+    private Integer offeredUnits;
 
-        @Column("available_units")
-        private Integer availableUnits;
+    @Column("available_units")
+    private Integer availableUnits;
 
-        @Column("start_date")
-        @CassandraType(type = DataType.Name.TIMESTAMP)
-        private Date startDate;
+    @Column("start_date")
+    @CassandraType(type = DataType.Name.TIMESTAMP)
+    private Date startDate;
 
-        @Column("end_date")
-        @CassandraType(type = DataType.Name.TIMESTAMP)
-        private Date endDate;
+    @Column("end_date")
+    @CassandraType(type = DataType.Name.TIMESTAMP)
+    private Date endDate;
 
-        @Column("auction_finished")
-        private Boolean finished;
+    @Column("auction_finished")
+    private Boolean finished;
 
-    }
+}
+```
     
 The corresponding Master Item repository should be implemented as follows:
 
-    public interface ItemRepository extends TypedIdCassandraRepository<Item, UUID> {
+```java
+public interface ItemRepository extends TypedIdCassandraRepository<Item, UUID> {
     
-    }
+}
+```
 
 And that's all - you can save and query items right away. Write an integration test to verify! 
 
@@ -224,17 +236,19 @@ In the previous iteration we have built the Item Masterdata. The Item Masterdata
 The User Items table should be defined as a [Dynamic table](http://planetcassandra.org/blog/datastax-developer-blog-a-thrift-to-cql3-upgrade-guide/). The [compound primary key](http://www.datastax.com/documentation/cql/3.1/cql/ddl/ddl_compound_keys_c.html) of the User Items table should consists of: `user_id` as the partitioning key
 and `item_id` as the clustering key. The `item_id` should be defined as the [timeuuid](http://www.datastax.com/documentation/cql/3.1/cql/cql_reference/uuid_type_r.html) data type. A value of timeuuid data type includes the time of its generation and are sorted by timestamp. The User Items should be sorted by the `item_id` ( incl. creation timestamp) in reverse order (latest item first on row):
 
-    CREATE TABLE cass_user_item (
-        user_id uuid,
-        item_id timeuuid,
-        item_name varchar,
-        unit_price decimal,
-        available_units int,
-        end_date timestamp,
-        auction_finished boolean,
-        PRIMARY KEY (user_id, item_id)
-    )
-    WITH CLUSTERING ORDER BY (item_id desc);
+```sql
+CREATE TABLE cass_user_item (
+    user_id uuid,
+    item_id timeuuid,
+    item_name varchar,
+    unit_price decimal,
+    available_units int,
+    end_date timestamp,
+    auction_finished boolean,
+    PRIMARY KEY (user_id, item_id)
+)
+WITH CLUSTERING ORDER BY (item_id desc);
+```
     
 The **User Items** table should be a short [Time series](http://planetcassandra.org/getting-started-with-time-series-data-modeling/) wide row. To keep the row short, data (columns) in the User Items table should be stored with an [expiration date](http://www.datastax.com/documentation/cql/3.1/cql/cql_using/use_expire_c.html), e.g. 30 days. 
 
@@ -243,96 +257,107 @@ Therefore, User Items History table should be defined with a [composite partitio
 
 In the Java code, the User Items **compound primary key** is represented by `UserItemKey`, a special [PrimaryKeyClass](http://docs.spring.io/spring-data/cassandra/docs/current/reference/htmlsingle/#cassandra-template.id-handling):
 
-    @PrimaryKeyClass
-    public class UserItemKey implements Serializable {
+```java
+@PrimaryKeyClass
+public class UserItemKey implements Serializable {
 
-        private static final long serialVersionUID = -791316285695123492L;
+    private static final long serialVersionUID = -791316285695123492L;
 
-        @PrimaryKeyColumn(name = "user_id", ordinal = 0, type = PrimaryKeyType.PARTITIONED)
-        private UUID userId;
+    @PrimaryKeyColumn(name = "user_id", ordinal = 0, type = PrimaryKeyType.PARTITIONED)
+    private UUID userId;
 
-        @PrimaryKeyColumn(name = "item_id", ordinal = 1, type = PrimaryKeyType.CLUSTERED, ordering = Ordering.DESCENDING)
-        private UUID itemId;
+    @PrimaryKeyColumn(name = "item_id", ordinal = 1, type = PrimaryKeyType.CLUSTERED, ordering = Ordering.DESCENDING)
+    private UUID itemId;
     
-    }
+}
+```
     
 Next, the User Items class should be defined as follows:
 
-    @Table("cass_user_item")
-    public class UserItem {
-        @PrimaryKey
-        private UserItemKey id;
+```java
+@Table("cass_user_item")
+public class UserItem {
+    @PrimaryKey
+    private UserItemKey id;
     
-        @Column("item_name")
-        private String name;
+    @Column("item_name")
+    private String name;
     
-        @Column("unit_price")
-        private BigDecimal unitPrice;
+    @Column("unit_price")
+    private BigDecimal unitPrice;
     
-        @Column("available_units")
-        private Integer availableUnits;
+    @Column("available_units")
+    private Integer availableUnits;
     
-        @Column("auction_finished")
-        private Boolean finished;
+    @Column("auction_finished")
+    private Boolean finished;
     
-        @Column("end_date")
-        private Date endDate;
-    }
+    @Column("end_date")
+    private Date endDate;
+}
+```
     
 The corresponding User Item repository should be implemented as follows:
 
-    public interface UserItemRepository extends TypedIdCassandraRepository<UserItem, UserItemKey> {
+```java
+public interface UserItemRepository extends TypedIdCassandraRepository<UserItem, UserItemKey> {
     
-    }
+}
+```
     
 So far we have implemented the **Item Masterdata** and **User Items** tables, each serving its specific purpose. The final step is to keep both these tables in sync. This can be achieved with a Cassandra [Batch](http://www.datastax.com/documentation/cql/3.1/cql/cql_reference/batch_r.html).
 
 To implement a batch insert, you have to implement a [custom repository](http://docs.spring.io/spring-data/cassandra/docs/1.0.2.RELEASE/reference/html/repositories.html#repositories.custom-implementations) interface:
 
-    public interface ItemRepositoryCustom {
+```java
+public interface ItemRepositoryCustom {
 
-        Item saveItem(Item item);
-    }
+    Item saveItem(Item item);
+}
+```
     
 Next, add the custom repository to the main repository definition: 
 
-    public interface ItemRepository extends TypedIdCassandraRepository<Item, UUID>, ItemRepositoryCustom {
+```java
+public interface ItemRepository extends TypedIdCassandraRepository<Item, UUID>, ItemRepositoryCustom {
     
-    }
+}
+```
     
 Finally, implement the batch insert with the [DataStax QueryBuilder API](http://www.datastax.com/documentation/developer/java-driver/2.0/java-driver/reference/queryBuilderOverview.html):
 
-    class ItemRepositoryImpl implements ItemRepositoryCustom {
+```java
+class ItemRepositoryImpl implements ItemRepositoryCustom {
 
-        private CassandraOperations cassandraOperations;
+    private CassandraOperations cassandraOperations;
     
-        @Inject
-        ItemRepositoryImpl(CassandraOperations cassandraOperations) {
-            this.cassandraOperations = cassandraOperations;
-        }
-    
-        @Override
-        public Item saveItem(Item item) {
-            Session session = cassandraOperations.getSession();
-       
-            PreparedStatement masterItem = session.prepare(masterItemInsert());
-            PreparedStatement userItem = session.prepare(userItemInsertWithTtl());
-        
-            BatchStatement batch = new BatchStatement();
-       
-            //master item
-            batch.add(masterItem.bind(item.getId(), item.getUserId(), item.getName(), item.getDescription(),
-                       item.getUnitPrice(), item.getOfferedUnits(), item.getStartDate(), item.getEndDate(), item.getTags()));
-            //user item
-            batch.add(userItem.bind(item.getUserId(), item.getId(), item.getName(), item.getUnitPrice(),
-                       item.getOfferedUnits(), item.getEndDate()));
-                       
-            cassandraOperations.execute(batch)
-        
-            return item;
-        }
+    @Inject
+    ItemRepositoryImpl(CassandraOperations cassandraOperations) {
+        this.cassandraOperations = cassandraOperations;
     }
-
+    
+    @Override
+    public Item saveItem(Item item) {
+        Session session = cassandraOperations.getSession();
+       
+        PreparedStatement masterItem = session.prepare(masterItemInsert());
+        PreparedStatement userItem = session.prepare(userItemInsertWithTtl());
+        
+        BatchStatement batch = new BatchStatement();
+       
+        //master item
+        batch.add(masterItem.bind(item.getId(), item.getUserId(), item.getName(), item.getDescription(),
+            item.getUnitPrice(), item.getOfferedUnits(), item.getStartDate(), item.getEndDate(), item.getTags()));
+        //user item
+        batch.add(userItem.bind(item.getUserId(), item.getId(), item.getName(), item.getUnitPrice(),
+            item.getOfferedUnits(), item.getEndDate()));
+                       
+        cassandraOperations.execute(batch)
+        
+        return item;
+    }
+}
+```
 
 ### Iteration #4 - List Items by Tag (Collections)
 
@@ -345,46 +370,52 @@ The first requirement can be fulfilled with the [Cassandra Collections](http://w
 
 For the item tags, set is the most suitable Collection type:
 
-    CREATE TABLE cass_master_item (
-        id timeuuid,
-        user_id uuid,
-        item_name varchar,
-        item_desc text,
-        unit_price decimal,
-        offered_units int,
-        available_units int,
-        start_date timestamp,
-        end_date timestamp,
-        tags set<text>,
-        auction_finished boolean,
-        PRIMARY KEY (id)
-    );
+```sql
+CREATE TABLE cass_master_item (
+    id timeuuid,
+    user_id uuid,
+    item_name varchar,
+    item_desc text,
+    unit_price decimal,
+    offered_units int,
+    available_units int,
+    start_date timestamp,
+    end_date timestamp,
+    tags set<text>,
+    auction_finished boolean,
+    PRIMARY KEY (id)
+);
+```
     
 In the Java code, the Cassandra set is mapped to **java.util.Set**:
- 
-    @Table("cass_master_item")
-    public class Item {
- 
-        //other columns skipped here 
 
-        @Column("tags")
+```java 
+@Table("cass_master_item")
+public class Item {
+ 
+    //other columns skipped here 
+
+    @Column("tags")
         private Set<String> tags;
         
-    }
+}
+```
     
 After Item Masterdata has been enhanced with tags, the second requirement can be implemented. Tagged items will be stored in a new Dynamic Table (wide row) - Tag Items: 
 
-    CREATE TABLE cass_tag_item (
-        tag varchar,
-        item_id timeuuid,
-        item_name varchar,
-        unit_price decimal,
-        available_units int,
-        end_date timestamp,
-        auction_finished boolean,
-        PRIMARY KEY (tag, item_id)
-    )
-    WITH CLUSTERING ORDER BY (item_id desc);
+```sql
+CREATE TABLE cass_tag_item (
+    tag varchar,
+    item_id timeuuid,
+    item_name varchar,
+    unit_price decimal,
+    available_units int,
+    end_date timestamp,
+    auction_finished boolean,
+    PRIMARY KEY (tag, item_id)
+)
+WITH CLUSTERING ORDER BY (item_id desc);
+```
     
 Please note that the **Tag Items** table has pretty much same structure as the **User Items** table. The only difference is the primary key definition, and more specifically the partitioning key (row key). Do you remember Iteration #2?  Let me recall this - **each table will be specialized for a specific query**. The **User Items** row will be looked up by the `user_id` and the **Tag Items** row will be looked up by `tag`. 
 
@@ -396,18 +427,21 @@ If you have strong background in the relational world, you will most likely disa
 
 The only remaining task to finish the **Tag Items** Listing, is to put everything in one [Batch](http://www.datastax.com/documentation/cql/3.1/cql/cql_reference/batch_r.html), so **Item Masterdata**, **User Items** and **Tag Items** are all kept in sync.
 
-    BatchStatement batch = new BatchStatement();
+BatchStatement batch = new BatchStatement();
 
-    //master item
-    batch.add(masterItem.bind(item.getId(), item.getUserId(), item.getName(), item.getDescription(),
-                item.getUnitPrice(), item.getOfferedUnits(), item.getStartDate(), item.getEndDate(), item.getTags()));
-    //user item
-    batch.add(userItem.bind(item.getUserId(), item.getId(), item.getName(), item.getUnitPrice(),
-                item.getOfferedUnits(), item.getEndDate()));
-    //tag items
-    for (String tag : item.getTags()) {
-        batch.add(tagItem.bind(tag, item.getId(), item.getName(), item.getUnitPrice(), item.getOfferedUnits(), item.getEndDate()));
-    }
+```java
+//master item
+batch.add(masterItem.bind(item.getId(), item.getUserId(), item.getName(), item.getDescription(),
+    item.getUnitPrice(), item.getOfferedUnits(), item.getStartDate(), item.getEndDate(), item.getTags()));
+//user item
+batch.add(userItem.bind(item.getUserId(), item.getId(), item.getName(), item.getUnitPrice(),
+    item.getOfferedUnits(), item.getEndDate()));
+    
+//tag items
+for (String tag : item.getTags()) {
+    batch.add(tagItem.bind(tag, item.getId(), item.getName(), item.getUnitPrice(), item.getOfferedUnits(), item.getEndDate()));
+}
+```
 
 ### Iteration #5 -  Purchasing an Item (Lightweight Transactions)
 
@@ -431,49 +465,55 @@ To take advantage of the Cassandra's transactional support, the purchase process
 
 For **Step 1**, the following Static table can be used:
 
-    CREATE TABLE cass_master_purchase (
-        id timeuuid,
-        item_id timeuuid,
-        user_id uuid,
-        unit_price decimal,
-        quantity int,
-        status varchar,
-        PRIMARY KEY (id)
-    );
+```sql
+CREATE TABLE cass_master_purchase (
+    id timeuuid,
+    item_id timeuuid,
+    user_id uuid,
+    unit_price decimal,
+    quantity int,
+    status varchar,
+    PRIMARY KEY (id)
+);
+```
     
 After the "Buy now" button is clicked, a new purchase (status = Created) is saved with an **expiration date** set to 24h. Only after the purchase is successfully bound to an item, the expiration date is reset and the purchase is permanent. Otherwise, the purchase is automatically garbage-collected by Cassandra.
 
 For **Step 2**, the Item Masterdata table has to be enhanced with a new Collection data type - the **purchases map**, where key is the `purchase_id` and value is the `quantity`:
 
-    CREATE TABLE cass_master_item (
-        id timeuuid,
-        user_id uuid,
-        item_name varchar,
-        item_desc text,
-        unit_price decimal,
-        offered_units int,
-        available_units int,
-        start_date timestamp,
-        end_date timestamp,
-        tags set<text>,
-        purchases map<timeuuid, int>, => Takes advantage of row level isolation
-        auction_finished boolean,
-        PRIMARY KEY (id)
-    );
+```sql
+CREATE TABLE cass_master_item (
+    id timeuuid,
+    user_id uuid,
+    item_name varchar,
+    item_desc text,
+    unit_price decimal,
+    offered_units int,
+    available_units int,
+    start_date timestamp,
+    end_date timestamp,
+    tags set<text>,
+    purchases map<timeuuid, int>, => Takes advantage of row level isolation
+    auction_finished boolean,
+    PRIMARY KEY (id)
+);
+```
     
 For popular items, the challange is to properly handle the [race conditions](http://en.wikipedia.org/wiki/Race_condition). This can be acomplished with the Cassandra's Lightweight Transactions - **UPDATE..IF**:
 
-    int availableUnitsBefore = item.getAvailableUnits();
-    int availableUnitsAfter = availableUnitsBefore - purchase.getQuantity();
-    boolean auctionFinished = availableUnitsAfter == 0;
+```java
+int availableUnitsBefore = item.getAvailableUnits();
+int availableUnitsAfter = availableUnitsBefore - purchase.getQuantity();
+boolean auctionFinished = availableUnitsAfter == 0;
 
-    //update the item with "optimistic locking" - lightweight transactions UPDATE..IF
-    return update(MASTER_ITEM_TABLE)
-            .with(set(AVAILABLE_UNITS, availableUnitsAfter))
-            .and(set(AUCTION_FINISHED, auctionFinished))
-            .and(put(PURCHASES, purchase.getId(), purchase.getQuantity()))
-            .where(eq(ID, item.getId()))
-            .onlyIf(eq(AVAILABLE_UNITS, availableUnitsBefore));
+//update the item with "optimistic locking" - lightweight transactions UPDATE..IF
+return update(MASTER_ITEM_TABLE)
+        .with(set(AVAILABLE_UNITS, availableUnitsAfter))
+        .and(set(AUCTION_FINISHED, auctionFinished))
+        .and(put(PURCHASES, purchase.getId(), purchase.getQuantity()))
+        .where(eq(ID, item.getId()))
+        .onlyIf(eq(AVAILABLE_UNITS, availableUnitsBefore));
+```
             
 In this example, the **optimistic lock** is applied on the **available units** column. If the value (snapshot) has changed between the purchase is created and bound to an item, the operation is rejected. If the item is still available, the operation should be retried.
 
@@ -481,12 +521,14 @@ For **Step 3**, after a purchase is linked with an item and the item availabilit
 
 In the example code, Google Guava [EventBus](https://code.google.com/p/guava-libraries/wiki/EventBusExplained) is used. In a production system, the event should be published to a [reliable messaging system](http://en.wikipedia.org/wiki/Reliable_messaging) with **guaranteed message delivery**.
 
-    Purchase purchase = new Purchase(UUIDs.timeBased(), item.getId(), user.getId(), item.getUnitPrice(), quantity);
-    purchaseRepository.savePurchase(purchase, TTL_24H);
+```java
+Purchase purchase = new Purchase(UUIDs.timeBased(), item.getId(), user.getId(), item.getUnitPrice(), quantity);
+purchaseRepository.savePurchase(purchase, TTL_24H);
 
-    if (purchaseRepository.bindPurchaseToItem(purchase, item)) {
-        eventPublisher.publish(new PurchaseBoundEvent(purchase));
-    }
+if (purchaseRepository.bindPurchaseToItem(purchase, item)) {
+    eventPublisher.publish(new PurchaseBoundEvent(purchase));
+}
+```
     
 And that's all for this iteration. We will handle the **PurchaseBoundEvent** in the next iteration, so stay tuned! :-) 
 
@@ -499,50 +541,58 @@ After a purchase is placed, the following **background tasks** must be perfomed 
 * **Task 3:** item listings are updated
 
 To keep the purchase data consistent, **Task 1** and **Task 2** will be combined into one Batch operation. The purchase update operation should be triggered by the **PurchaseBoundEvent**:
- 
-    @Component
-    public class PurchaseEventSubscriber {
-    
-        private PurchaseService purchaseService;
-    
-        @Subscribe
-        public void onEvent(PurchaseBoundEvent event) {
-            Purchase purchase = event.getPurchase();
 
-            purchaseService.completePurchase(purchase);
-        }
+```java 
+@Component
+public class PurchaseEventSubscriber {
+    
+    private PurchaseService purchaseService;
+    
+    @Subscribe
+    public void onEvent(PurchaseBoundEvent event) {
+        Purchase purchase = event.getPurchase();
+
+        purchaseService.completePurchase(purchase);
     }
+}
+```
     
 And, the Batch update should be carried out in the repository:
 
-    BatchStatement batch = new BatchStatement();
+```java
+BatchStatement batch = new BatchStatement();
 
-    batch.add(purchaseStatusUpdate.bind(Purchase.STATUS_COMPLETED, purchase.getId()));
-    batch.add(userPurchaseInsert.bind(purchase.getUserId(), purchase.getId(), purchase.getItemId(), purchase.getUnitPrice(), purchase.getQuantity()));
+batch.add(purchaseStatusUpdate.bind(Purchase.STATUS_COMPLETED, purchase.getId()));
+batch.add(userPurchaseInsert.bind(purchase.getUserId(), purchase.getId(), purchase.getItemId(), purchase.getUnitPrice(), purchase.getQuantity()));
+```
     
 To keep the item Listings up to date with the Item Masterdata, there must be a separate event subscriber for item changes:
 
-    @Component
-    public class ItemEventSubscriber {
+```java
+@Component
+public class ItemEventSubscriber {
     
-        private ItemService itemService;
+    private ItemService itemService;
         
-        @Subscribe
-        public void onEvent(PurchaseBoundEvent event) {
-            Purchase purchase = event.getPurchase();
+    @Subscribe
+    public void onEvent(PurchaseBoundEvent event) {
+        Purchase purchase = event.getPurchase();
 
-            itemService.updateListingItems(purchase.getItemId());
-        }
+        itemService.updateListings(purchase.getItemId());
     }
+}
+```
        
 And the corresponding repository:
 
-    public void updateListingItems(UUID itemId) {
-        Item item = itemRepository.findOne(itemId);
+```java
+public void updateListingItems(UUID itemId) {
+    Item item = itemRepository.findOne(itemId);
 
-        updateUserItem(item);
-        updateTagItems(item);
-    }
+    updateUserItem(item);
+    updateTagItems(item);
+}
+```
         
 The exercise is complete! The purchase is placed in the system, item masterdata and the corresponding Listings are updated. The whole process (though very simplified) has been accomplished. Well done! :-)
 
