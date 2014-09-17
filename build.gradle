@@ -1,0 +1,59 @@
+buildscript {
+    repositories {
+        maven { url "http://repo.spring.io/libs-snapshot" }
+        mavenLocal()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'groovy'
+apply plugin: 'idea'
+apply plugin: 'spring-boot'
+
+jar {
+    baseName = 'cassandra-modeling-kata'
+    version = '0.1.0'
+}
+
+repositories {
+    mavenCentral()
+    maven { url "http://repo.spring.io/libs-snapshot" }
+}
+
+configurations {
+    compile.exclude group: 'org.jboss.netty'
+    testCompile.exclude group: 'org.jboss.netty'
+}
+
+dependencies {
+    compile('javax.inject:javax.inject:1')
+
+    compile("com.google.guava:guava:${guavaVersion}")
+
+    compile("org.slf4j:slf4j-api:${slf4jVersion}")
+    compile("ch.qos.logback:logback-classic:${logbackVersion}")
+    compile("ch.qos.logback:logback-core:${logbackVersion}")
+
+    compile("com.datastax.cassandra:cassandra-driver-core:${cassDriverVersion}")
+    compile("org.springframework.data:spring-data-cassandra:${springDataCassVersion}")
+
+
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+    testCompile("junit:junit:${junitVersion}")
+    testCompile("org.assertj:assertj-core:${assertjVersion}")
+
+    testCompile("org.codehaus.groovy:groovy-all:${groovyVersion}")
+    testCompile("org.spockframework:spock-core:${spockVersion}")
+    testCompile("org.spockframework:spock-spring:${spockVersion}")
+
+    testCompile("cglib:cglib-nodep:2.2.2")
+    testCompile("info.archinnov:achilles-embedded:${achillesVersion}")
+    testCompile("info.archinnov:achilles-junit:${achillesVersion}")
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.0'
+}
